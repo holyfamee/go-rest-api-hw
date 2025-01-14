@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -40,13 +41,67 @@ var tasks = map[string]Task{
 }
 
 // Ниже напишите обработчики для каждого эндпоинта
-// ...
+func getTasks(w http.ResponseWriter, r *http.Request) {
+	resp, err := json.Marshal(tasks)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
+
+}
+
+func createTask(w http.ResponseWriter, r *http.Request) {
+	var newTask Task
+	err := json.NewDecoder(r.Body).Decode(&newTask) //Сложна
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	tasks[newTask.ID] = newTask
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+}
+
+func getTaskByID(w http.ResponseWriter, r *http.Request) {
+	_, IsId := tasks[chi.URLParam(r, "id")]
+	if !IsId {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	jsonIdTask, err := json.Marshal(tasks[chi.URLParam(r, "id")])
+	if err != nil {
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonIdTask)
+
+}
+
+func deleteTask(w http.ResponseWriter, r *http.Request) {
+	_, IsId := tasks[chi.URLParam(r, "id")]
+	if !IsId {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	delete(tasks, chi.URLParam(r, "id"))
+	w.WriteHeader(http.StatusOK)
+
+}
 
 func main() {
 	r := chi.NewRouter()
 
 	// здесь регистрируйте ваши обработчики
-	// ...
+	r.Get("/tasks", getTasks)
+	r.Post("/tasks", createTask)
+	r.Get("/tasks/{id}", getTaskByID)
+	r.Delete("/tasks/{id}", deleteTask)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
