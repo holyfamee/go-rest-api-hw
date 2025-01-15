@@ -60,7 +60,18 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	//проверяем, есть ли уже такая задача или id
+	for id, task := range tasks {
+		if id == newTask.ID {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if task.Description == newTask.Description {
+			w.WriteHeader(http.StatusBadRequest)
+			return
 
+		}
+	}
 	tasks[newTask.ID] = newTask
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -68,8 +79,8 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTaskByID(w http.ResponseWriter, r *http.Request) {
-	_, IsId := tasks[chi.URLParam(r, "id")]
-	if !IsId {
+	_, isId := tasks[chi.URLParam(r, "id")]
+	if !isId {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -89,9 +100,9 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	delete(tasks, chi.URLParam(r, "id"))
 	w.WriteHeader(http.StatusOK)
-
 }
 
 func main() {
